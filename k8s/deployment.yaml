@@ -20,6 +20,9 @@ spec:
         - name: petclinic
           image: petclinicacrpy2t5evhiqdr4.azurecr.io/spring-petclinic:latest
           imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsUser: 1000
+            runAsNonRoot: true
           resources:
             requests:
               cpu: "250m"
@@ -32,10 +35,9 @@ spec:
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: "postgres"
-            - name: POSTGRES_URL
-              value: "jdbc:postgresql://postgres-petclinic-py2t5evhiqdr4.postgres.database.azure.com:5432/petclinic?sslmode=require"
-            - name: AZURE_MANAGED_IDENTITY_NAME
-              value: "petclinic-app-uami-yqkjlqj5mgv34"
+          envFrom:
+            - configMapRef:
+                name: petclinic-config
           readinessProbe:
             httpGet:
               path: /actuator/health
