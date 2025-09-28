@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: petclinic
+  name: petclinic-wi
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: petclinic-wi
+  template:
+    metadata:
+      labels:
+        app: petclinic-wi
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: sc-account-79bfdfb1-54f2-4b58-9bdf-5545c12b4793
+      containers:
+        - name: petclinic
+          image: petclinicacrpy2t5evhiqdr4.azurecr.io/spring-petclinic:latest
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsUser: 1000
+            runAsNonRoot: true
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "postgres"
+          envFrom:
+            - secretRef:
+                name: sc-pg-secret
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 20
