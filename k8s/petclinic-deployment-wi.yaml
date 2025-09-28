@@ -17,9 +17,18 @@ spec:
         azure.workload.identity/use: "true"
     spec:
       serviceAccountName: sc-account-d4157fc8-73b5-4a68-acf4-39c8f22db792
+      imagePullSecrets:
+      - name: acr-pull-secret
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app: petclinic
       containers:
       - name: petclinic
-        image: <acr-login-server>/petclinic:latest
+        image: petclinicacrpy2t5evhiqdr4.azurecr.io/petclinic:latest
         ports:
         - containerPort: 8080
         env:
@@ -27,6 +36,31 @@ spec:
           value: "postgres"
         - name: DATABASE
           value: "postgres"
+        # map secret keys to container env vars
+        - name: AZURE_POSTGRESQL_HOST
+          valueFrom:
+            secretKeyRef:
+              name: sc-pg-secret
+              key: AZURE_POSTGRESQL_HOST
+        - name: AZURE_POSTGRESQL_PORT
+          valueFrom:
+            secretKeyRef:
+              name: sc-pg-secret
+              key: AZURE_POSTGRESQL_PORT
+        - name: AZURE_POSTGRESQL_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: sc-pg-secret
+              key: AZURE_POSTGRESQL_DATABASE
+        - name: AZURE_MANAGED_IDENTITY_NAME
+          valueFrom:
+            secretKeyRef:
+              name: sc-pg-secret
+              key: AZURE_POSTGRESQL_CLIENTID
+        # compose the JDBC URL from the mapped env vars
+        - name: POSTGRES_URL
+          value: "jdbc:postgresql://$(AZURE_POSTGRESQL_HOST):$(AZURE_POSTGRESQL_PORT)/$(AZURE_POSTGRESQL_DATABASE)?sslmode=require"
+        # keep envFrom so other secret keys are still available in the pod
         envFrom:
         - secretRef:
             name: sc-pg-secret
