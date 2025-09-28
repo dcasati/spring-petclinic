@@ -57,6 +57,11 @@ spec:
             secretKeyRef:
               name: sc-pg-secret
               key: AZURE_POSTGRESQL_CLIENTID
+        - name: AZURE_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: sc-pg-secret
+              key: AZURE_POSTGRESQL_CLIENTID
         # compose the JDBC URL from the mapped env vars
         - name: POSTGRES_URL
           value: "jdbc:postgresql://$(AZURE_POSTGRESQL_HOST):$(AZURE_POSTGRESQL_PORT)/$(AZURE_POSTGRESQL_DATABASE)?sslmode=require"
