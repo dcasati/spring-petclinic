@@ -16,7 +16,7 @@ spec:
         app: petclinic
         azure.workload.identity/use: "true"
     spec:
-      serviceAccountName: sc-account-d4157fc8-73b5-4a68-acf4-39c8f22db792
+      serviceAccountName: sc-account-79bfdfb1-54f2-4b58-9bdf-5545c12b4793
       imagePullSecrets:
       - name: acr-pull-secret
       topologySpreadConstraints:
