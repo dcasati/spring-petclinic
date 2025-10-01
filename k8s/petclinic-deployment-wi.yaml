@@ -17,8 +17,6 @@ spec:
         azure.workload.identity/use: "true"
     spec:
       serviceAccountName: sc-account-79bfdfb1-54f2-4b58-9bdf-5545c12b4793
-      imagePullSecrets:
-      - name: acr-pull-secret
       topologySpreadConstraints:
       - maxSkew: 1
         topologyKey: kubernetes.io/hostname
@@ -62,9 +60,25 @@ spec:
             secretKeyRef:
               name: sc-pg-secret
               key: AZURE_POSTGRESQL_CLIENTID
+        # Spring Boot database configuration
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:postgresql://$(AZURE_POSTGRESQL_HOST):$(AZURE_POSTGRESQL_PORT)/$(AZURE_POSTGRESQL_DATABASE)?sslmode=require&authenticationPluginClassName=com.azure.identity.extensions.jdbc.postgresql.AzurePostgresqlAuthenticationPlugin"
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: sc-pg-secret
+              key: AZURE_POSTGRESQL_USERNAME
+        - name: SPRING_DATASOURCE_PASSWORD
+          value: ""
+        # Spring Cloud Azure configuration
+        - name: SPRING_CLOUD_AZURE_CREDENTIAL_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: sc-pg-secret
+              key: AZURE_POSTGRESQL_CLIENTID
         # compose the JDBC URL from the mapped env vars
         - name: POSTGRES_URL
-          value: "jdbc:postgresql://$(AZURE_POSTGRESQL_HOST):$(AZURE_POSTGRESQL_PORT)/$(AZURE_POSTGRESQL_DATABASE)?sslmode=require"
+          value: "jdbc:postgresql://$(AZURE_POSTGRESQL_HOST):$(AZURE_POSTGRESQL_PORT)/$(AZURE_POSTGRESQL_DATABASE)?sslmode=require&authenticationPluginClassName=com.azure.identity.extensions.jdbc.postgresql.AzurePostgresqlAuthenticationPlugin"
         # keep envFrom so other secret keys are still available in the pod
         envFrom:
         - secretRef:
@@ -73,14 +87,16 @@ spec:
           httpGet:
             path: /actuator/health
             port: 8080
-          initialDelaySeconds: 60
+          initialDelaySeconds: 180
           periodSeconds: 30
+          failureThreshold: 5
         readinessProbe:
           httpGet:
             path: /actuator/health
             port: 8080
-          initialDelaySeconds: 30
+          initialDelaySeconds: 120
           periodSeconds: 10
+          failureThreshold: 10
         resources:
           requests:
             memory: "512Mi"
@@ -101,4 +117,4 @@ spec:
   ports:
   - port: 80
     targetPort: 8080
-  type: ClusterIP
+  type: LoadBalancer
